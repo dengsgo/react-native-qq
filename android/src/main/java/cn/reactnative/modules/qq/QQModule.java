@@ -1,10 +1,13 @@
 package cn.reactnative.modules.qq;
 
+import org.json.JSONObject;
+
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.app.Activity;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Arguments;
@@ -52,6 +55,7 @@ public class QQModule extends ReactContextBaseJavaModule implements IUiListener,
 
     public QQModule(ReactApplicationContext context) {
         super(context);
+		context.addActivityEventListener(this);
         ApplicationInfo appInfo = null;
         try {
             appInfo = context.getPackageManager().getApplicationInfo(context.getPackageName(), PackageManager.GET_META_DATA);
@@ -189,15 +193,35 @@ public class QQModule extends ReactContextBaseJavaModule implements IUiListener,
         return (this.isLogin?"QQAuthorizeResponse":"QQShareResponse");
     }
 
+	@Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Tencent.onActivityResultData(requestCode, resultCode, data, this);
+    }
+	
+	// >= RN 0.33.0
+    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
         Tencent.onActivityResultData(requestCode, resultCode, data, this);
     }
 
     @Override
     public void onComplete(Object o) {
+		JSONObject jo = (JSONObject) o;
         WritableMap resultMap = Arguments.createMap();
         resultMap.putInt("code", SHARE_RESULT_CODE_SUCCESSFUL);
         resultMap.putString("message", "Share successfully.");
+		resultMap.putInt("ret", jo.optInt("ret", 0));
+		if(jo.has("openid")){
+			resultMap.putString("openid", jo.optString("openid"));
+		}
+		if(jo.has("expires_in")){
+			resultMap.putString("expires_in", jo.optString("expires_in"));
+		}
+		if(jo.has("access_token")){
+			resultMap.putString("access_token", jo.optString("access_token"));
+		}
+		if(jo.has("oauth_consumer_key")){
+			resultMap.putString("oauth_consumer_key", jo.optString("oauth_consumer_key"));
+		}
 
         this.resolvePromise(resultMap);
     }

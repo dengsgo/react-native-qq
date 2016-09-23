@@ -25,25 +25,13 @@ export const isQQSupportApi = QQAPI.isQQSupportApi;
 
 // Save callback and wait for future event.
 let savedCallback = undefined;
-function waitForResponse(type) {
+function waitForResponse(r, type) {
     return new Promise((resolve, reject) => {
-        if (savedCallback) {
-            savedCallback('User canceled.');
-        }
-        savedCallback = result => {
-            if (result.type !== type) {
-                return;
-            }
-            savedCallback = undefined;
-            if (result.errCode !== 0) {
-                const err = new Error(result.errMsg);
-                err.errCode = result.errCode;
-                reject(err);
-            } else {
-                const {type, ...r} = result
-                resolve(r);
-            }
-        };
+		if(r.code==0){
+			resolve(r);
+		}else{
+			reject(type+' err');
+		}
     });
 }
 
@@ -55,17 +43,17 @@ NativeAppEventEmitter.addListener('QQ_Resp', resp => {
 
 export function login(scopes) {
     return QQAPI.login(scopes)
-        .then(() => waitForResponse("QQAuthorizeResponse"));
+        .then((r) => waitForResponse(r, "QQAuthorizeResponse"));
 }
 
 export function shareToQQ(data={}) {
     return QQAPI.shareToQQ(data)
-        .then(() => waitForResponse("QQShareResponse"));
+        .then((r) => waitForResponse(r, "QQShareResponse"));
 }
 
 export function shareToQzone(data={}) {
     return QQAPI.shareToQzone(data)
-        .then(() => waitForResponse("QQShareResponse"));
+        .then((r) => waitForResponse(r, "QQShareQzoneResponse"));
 }
 
 export function logout(){
